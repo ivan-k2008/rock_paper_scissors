@@ -15,8 +15,16 @@ while PlayAgain==("yes"):
             CPS = player_dic[current_player].split(":")[0]
             BPS = player_dic[current_player].split(":")[1]
 
+        while True:
+            try:
+             rounds = int(input("How many rounds would you like? "))
+             if rounds <= 0:
+                print("Please enter a positive number of rounds.")
+                continue
+             break
+            except ValueError:
+                print("Invalid input. Please enter a valid integer for the number of rounds.")
         
-        rounds=input("How many rounds would you like?")
         while int(pscore) < int(rounds) and int(bscore) < int(rounds):
             Bot=random.randint(1, 3)
             Player = None
@@ -29,7 +37,7 @@ while PlayAgain==("yes"):
                 elif Player=='scissors':
                     Player=3
                 else:
-                    print("please input a valid function")
+                    print("Invalid input.  Please choose 'rock', 'paper', or 'scissors'.")
                     Player = None
             Score=int(Player)-int(Bot)   
             if Score==-1 or Score==2:
@@ -52,6 +60,10 @@ while PlayAgain==("yes"):
         CBS = int(CBS) + bscore
         player_dic[current_player] = (str(CPS) + ":" + str(CBS))
         print("\n")
-        PlayAgain=input("would you like to play again?")
-        
+        while True:
+            PlayAgain = input("Would you like to play again? (yes/no): ").lower().strip()
+            if PlayAgain in ["yes", "no"]:
+                break
+        else:
+            print("Please enter 'yes' or 'no'.")        
 
