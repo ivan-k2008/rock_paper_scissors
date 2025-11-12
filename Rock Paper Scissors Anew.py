@@ -32,14 +32,24 @@ while PlayAgain==("yes"):
                 Player=input("Rock, Paper, Scissors:")
                 if Player=='rock':
                     Player=1
+                    print("Player chooses rock", end=', ')
                 elif Player=='paper':
                     Player=2
+                    print("Player chooses paper", end=', ')
                 elif Player=='scissors':
                     Player=3
+                    print("Player chooses scissors", end=', ')
                 else:
                     print("Invalid input.  Please choose 'rock', 'paper', or 'scissors'.")
                     Player = None
-            Score=int(Player)-int(Bot)   
+                if Bot == 1:
+                    print("Bot chooses rock")
+                elif Bot == 2:
+                    print("Bot chooses paper")
+                elif Bot == 3:
+                    print("Bot chooses scissors")
+            Score=int(Player)-int(Bot)  
+            print()
             if Score==-1 or Score==2:
                 print("Loss!")
                 bscore += 1
@@ -66,4 +76,5 @@ while PlayAgain==("yes"):
                 break
         else:
             print("Please enter 'yes' or 'no'.")        
+
 
