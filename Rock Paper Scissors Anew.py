@@ -77,4 +77,5 @@ while PlayAgain==("yes"):
         else:
             print("Please enter 'yes' or 'no'.")        
 
+print("Thank you, come again")        
 
