@@ -38,7 +38,7 @@ class Combat:
     def __str__(Self):
         return "\nPlayer chooses: " + Self.PlayerChoice + "\n\nBot chooses: " + Self.BotChoice # returns a string displaying both choices
         
-    def game(Self):
+    def game(Self): 
         PlayerScore = 0 # initializes both score variables
         BotScore = 0
         while (PlayerScore <= Self.Rounds / 2 and BotScore <= Self.Rounds / 2) and PlayerScore + BotScore != Self.Rounds:
@@ -84,7 +84,21 @@ class Combat:
         return [PlayerScore, BotScore] # returns the final scores to update player_dic
     
 # - - - - - - - - - - - - - - - - - - - - - - - - end of initialization - - - - - - - - - - - - - - - - - - - - - - - - #
-    
+class HighScore:
+    def __init__(self):
+        self.name = None
+        self.score = 0
+
+    def update(self, player_name, player_score):
+        if player_score > self.score:
+            self.name = player_name
+            self.score = player_score
+
+    def __str__(self):
+        if self.name is None:
+            return "No high score yet."
+        return f"High Score -> {self.name.capitalize()} with {self.score} total wins"
+high_score = HighScore()
 player_dic = {}
 PlayAgain="yes"
 while PlayAgain==("yes"):
@@ -117,6 +131,8 @@ while PlayAgain==("yes"):
     CPS = CPS + Results[0]
     CBS = CBS + Results[1]
     player_dic[current_player] = str(CPS) + ":" + str(CBS)
+    high_score.update(current_player, CPS)
+    print(high_score)
 
     while True:
         PlayAgain = input("Would you like to play again? (Yes/No): ").lower().strip()
