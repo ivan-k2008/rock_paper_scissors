@@ -1,2 +1,1 @@
-import tkinter
-if __name__ == __main__
+import GUI_management
