@@ -1,146 +1,304 @@
+import tkinter as tk
+from tkinter import messagebox as mb
+import pickle
 
-from random import choice
-from time import sleep
 
-class Combat:
-    def __init__(Self):
-        while True:
+#==============================HEX_VARIABLES===============================        
+def Hex(hex_num):
+    # [0]-BLACK, [1]-GRAY, [2]-BROWN, [3]-BLUE, [4]-WHITE, [5]-LT/GRAY, [6]-GREEN
+    Hex = ['#000000', '#2c2c2c', '#532E21', '#1c5366', '#ffffff', '#808080', '#00ff00']
+    return Hex[hex_num]
+
+#=============================================================#
+#=======================___SYSTEM___==========================#
+#=============================================================#
+
+class window(tk.Tk):
+    def __init__(self, title):
+        super().__init__()
+
+        # VARIABLES
+        self.__screen_width = self.winfo_screenwidth()
+        self.__screen_height = self.winfo_screenheight()
+        self.__mainfont = ("System", 20)
+
+        # ==========WINDOW_FRAME==========
+        self.title(title)
+        self.main_frame = tk.Frame(self, bg=Hex(1)) 
+        self.main_frame.pack(fill="both", expand=True)
+
+
+
+
+
+    def custom_title_bar(self, title):
+        self.main_frame.destroy() 
+        self.is_maximized = False
+        self.normal_geometry = "800x500+100+100"  # default size
+        self.geometry(self.normal_geometry)
+        self.bind("<Map>", self.restore_window)
+    
+
+        #=====================__EVENT_HANDLERS__====================#
+
+
+        # Create custom title bar
+        title_bar = tk.Frame(self, bg=Hex(0), relief="raised", bd=0)
+        title_bar.pack(fill="x")
+
+        # Title text
+        title_label = tk.Label(title_bar, text=title, bg=Hex(0), fg="blue", font = ("System", 12))
+        title_label.pack(side="left", padx=10)
+
+        # Maximize/Restore button
+        def toggle_maximize():
+            if not self.is_maximized:
+                # Save current size before maximizing
+                self.normal_geometry = self.geometry()
+
+                # Maximize to screen
+                self.geometry(f"{self.__screen_width}x{self.__screen_height}+0+0")
+
+                self.is_maximized = True
+            else:
+                # Restore previous size
+                self.geometry(self.normal_geometry)
+                self.is_maximized = False
+
+        # Minimize button
+        def minimize():
+            self.update_idletasks()
+            self.overrideredirect(False)   # temporarily restore window manager
+            self.iconify()
+
+        # Make window draggable
+        def start_move(event):
+            if self.is_maximized:
+                toggle_maximize()  # restore first
+            self.x = event.x
+            self.y = event.y
+
+        def move_window(event):
+            if not self.is_maximized:  # only allow dragging when not maximized
+                x = event.x_root - self.x
+                y = event.y_root - self.y
+                self.geometry(f"+{x}+{y}")
+
+        title_bar.bind("<Button-1>", start_move)
+        title_bar.bind("<B1-Motion>", move_window)
+
+        close_btn = tk.Button(title_bar, text="X", bg = Hex(0), fg = "red", command=self.destroy, bd=0, font = ("System", 12) )
+        close_btn.pack(side="right")  
+
+        max_btn = tk.Button(title_bar, text="□", bg = Hex(0), fg = Hex(4), command=toggle_maximize, bd=0, font = ("System", 12))
+        max_btn.pack(side="right")   
+
+        min_btn = tk.Button(title_bar, text="_", bg = Hex(0), fg = Hex(4), command=minimize, bd=0, font = ("System", 12))
+        min_btn.pack(side="right")
+
+
+
+
+
+        #=============__MAIN_FRAME__=============
+
+        self.main_frame = tk.Frame(self, bg=Hex(1))
+        self.main_frame.pack(fill="both", expand=True)
+
+
+
+
+
+
+
+
+
+    #_____RESTORE_WINDOW_____#
+    def restore_window(self, event=None):
+        if self.state() == "normal":
+            self.overrideredirect(True)
+
+
+    # _____WINDOW_CANVAS_____#
+    def canvas(self):       
+        canvas = tk.Canvas(
+            self.main_frame,
+            width = self.__screen_height*0.9,
+            height = self.__screen_height*0.9,
+            bg = Hex(2),
+            highlightthickness = 5
+        )
+        canvas.grid(row = 0, column = 0, padx = (15, 0), pady = 20)
+
+    # _____WINDOW_PANEL_____#
+    def panel(self):    
+        self.panel = tk.Frame(self.main_frame, bg=Hex(1))
+        self.panel.grid(row=0, column=1, sticky= 'ns', padx=(0, 10), pady=10)
+        panel_label = tk.Label(
+            self.panel,
+            text = "Game Settings-",
+            bg = Hex(1),
+            fg = Hex(4),
+            font = ("Times New Roman", int(self.__screen_height/20))
+        )
+        panel_label.pack(padx=10, pady=10)
+        return self.panel
+
+
+#============================================================================#
+# ===============================SETTINGS_MENU===============================#
+#============================================================================#
+
+class settings:
+
+    #=========================___SS_MENU___==========================#
+    @staticmethod
+    def SS_menu(destination, options, function, main_font=("System", 20), prefix=None, stripper = None):
+        if not options:
+            raise ValueError("options list cannot be empty")
+
+
+        row = tk.Frame(destination, bg=Hex(1))
+        row.pack(padx=10, pady=(0, 8), fill="x")
+
+        tk.Label(
+            row,
+            text=prefix,
+            bg=Hex(1),
+            fg=Hex(5),
+            font=main_font
+        ).pack(side="left")
+
+        # Keep original order
+        available_options = options.copy()
+        
+
+        menu_var = tk.StringVar()
+        current_selection = available_options[0]
+        menu_var.set(current_selection)
+
+        def rebuild_menu():
+            menu["menu"].delete(0, "end")
+
+            for option in options:
+                if option != current_selection:  # exclude selected item
+                    menu["menu"].add_command(
+                        label=option.split(stripper)[0] if stripper else option,
+                        command=lambda value=option: update_menu(value)
+                    )
+        # Update menu function
+        def update_menu(new_selection):
+            nonlocal current_selection
+            menu_var.set(new_selection) 
+            current_selection = new_selection
+
+            rebuild_menu()
+            function(new_selection) 
+
+            # Remove new selection
+            if new_selection in available_options:
+                available_options.remove(new_selection)
+
+            # Put old selection back in correct position
+            if old_selection not in available_options:
+                index = options.index(old_selection)
+                available_options.insert(index, old_selection)
+            old_selection = current_selection
+
+            # Rebuild menu
+            menu["menu"].delete(0, "end")
+            for option in available_options:
+                menu["menu"].add_command(
+                    label=option,
+                    command=lambda value=option: update_menu(value)
+                )    
+
+            # Call user function
+            function(new_selection)
+
+        menu = tk.OptionMenu(
+            row,
+            menu_var,
+            current_selection,
+            *[(opt.split(stripper)[0] if stripper else opt) for opt in available_options[1:]],
+            command=update_menu
+        )
+
+        menu.config(font=('System', 12), bg=Hex(0), fg=Hex(4))
+        menu.pack(side="left", padx=(6, 0), fill="x", expand=True)
+     
+
+
+    #=========================___SS_TEXT_BkOX___==========================#
+    @staticmethod
+    def SS_text_box(destination, data_loc, main_font=("System", 20), prefix=None):
+        row = tk.Frame(destination, bg=Hex(1))
+        row.pack(padx=10, pady=(0, 8), fill="x")
+
+        tk.Label(
+            row,
+            text=prefix,
+            bg=Hex(1),
+            fg=Hex(5),
+            font=main_font
+        ).pack(side="left")
+
+        text_box_var = tk.StringVar()
+
+        entry = tk.Entry(
+            row,
+            bg=Hex(0),
+            fg=Hex(4),
+            textvariable=text_box_var,
+            font=main_font
+        )
+
+        def save_entry(event=None):
+            global player_data, current_player
             try:
-                RoundsConfirmation = "None" # initializes RoundsConfirmation, which is used if someone enters a high number of rounds
-                
-                Self.Rounds = int(input("How many rounds would you like to play?: ").strip()) # asks for number of rounds
-                if Self.Rounds <= 0: # checks if its positive
-                    print("Please enter a positive number of rounds.")
-                    continue # if its not positive it just repeats
-                elif Self.Rounds >= 30: # if Self.Rounds is a high number...
-                    while True:
-                        RoundsConfirmation = input("This is a high number of rounds. " + \
-                                                   "Are you sure you want to continue? (Yes/No): ").capitalize().strip()
-                        # ^ ...the lines above double check with the user if they want to continue
-                        if RoundsConfirmation == "Yes": # if they say yes
-                            break # ends the loop
-                        elif RoundsConfirmation == "No": # if they say no
-                            break # ends the loop
-                        else: # if they enter something that isn't yes or no...
-                            print("Please enter 'Yes' or 'No'.") # displays a message and repeats the confirmation input
-                            
-                if RoundsConfirmation != "No": # if the user didn't enter no after entering a number of rounds above or equal to 30
-                    print("\n- - - - - - - - - - - - - -\n") # cool border
-                    break # ends the loop
-                # ^ the if statement above is for when a if puts a number of rounds above or equal to 30 and inputs 'No'
-                # into the RoundsConfirmation input, it asks them how many rounds they'd like to play again
-                
-            except ValueError: # incase the user inputs something other than a number
-                print("Invalid input. Please enter a valid integer for the number of rounds.")
-        Self.PlayerChoice = "None" # initialized these incase someone using the __str__ outside of the game() method
-        Self.BotChoice = "None" # also made them store strings to avoid errors with same scenario mentioned above ^
-        Self.Weapons = {"Rock":1, "Paper":2, "Scissors":3} # initializes weapons
-        
-    def __str__(Self):
-        return "\nPlayer chooses: " + Self.PlayerChoice + "\n\nBot chooses: " + Self.BotChoice # returns a string displaying both choices
-        
-    def game(Self): 
-        PlayerScore = 0 # initializes both score variables
-        BotScore = 0
-        while (PlayerScore <= Self.Rounds / 2 and BotScore <= Self.Rounds / 2) and PlayerScore + BotScore != Self.Rounds:
-        # ^ while both scores are not above half of the amount of rounds / while nobody's won and while its not a tie
-            while True:
-                Self.PlayerChoice = input("Rock, Paper, or Scissors?: ").capitalize().strip() # asks player for their choice
-                if Self.PlayerChoice in Self.Weapons: # if Self.PlayerChoice is a valid weapon
-                    break # end the loop
-                print("Invalid input. Please choose 'Rock', 'Paper', or 'Scissors'.") # prints if user input isn't a weapon
-                
-            Self.BotChoice = choice(["Rock", "Paper", "Scissors"]) # bot randomly picks between the three
-            
-            print(Self) # displays choices
-            print()
+                with open(f'{data_loc}.pkl', 'rb') as f:
+                    player_data = pickle.load(f)
+            except Exception as e:           
+                print("Failed to load player data:", e)
 
-            RoundScore = Self.Weapons[Self.PlayerChoice] - Self.Weapons[Self.BotChoice] # calculates the result of the round...
-            if RoundScore == -1 or RoundScore == 2:
-                print("Loss!") # ...then displays it
-                BotScore += 1
-            elif RoundScore == 0:
-                print("Tie!")
-            else:
-                print("Win!")
-                PlayerScore += 1
+            name = text_box_var.get().strip()
+            if name:
+                player_data[name] = 0
+                current_player = name
+                print(player_data)
+                try:
+                    with open(f'{data_loc}.pkl', 'wb') as f:
+                        pickle.dump(player_data, f)
+                except Exception as e:
+                    print("Failed to save player data:", e)
 
-            sleep(1) # waits one second before starting the next round so it doesnt go too fast
-            print("\n- - - - - - - - - - - - - -") # cool border
+            text_box_var.set("")
 
-            if (PlayerScore > Self.Rounds / 2 or BotScore > Self.Rounds / 2) or PlayerScore + BotScore == Self.Rounds: # if someone won or they tied...
-                print("\nFinal Score: (You)", PlayerScore, "-", BotScore, "(Bot)\n") # ...display 'final score' instead of 'current score'
-            else:
-                print("\nCurrent Score: (You)", PlayerScore, "-", BotScore, "(Bot)\n") # displays the current score
+        entry.pack(side="left", padx=(6, 0), fill="x", expand=True)
+        entry.bind("<Return>", save_entry)
+        entry.bind("<Return>", entry.delete(0, tk.END))
 
-        if PlayerScore > BotScore: # if you won
-            print("You have won the game!!")
-        elif BotScore > PlayerScore: # if you lost
-            print("You have lost the game.")
-        else: 
-            print("It's a tie!")
 
-        print("\n- - - - - - - - - - - - - -\n") # cool border
-            
-        return [PlayerScore, BotScore] # returns the final scores to update player_dic
-    
-# - - - - - - - - - - - - - - - - - - - - - - - - end of initialization - - - - - - - - - - - - - - - - - - - - - - - - #
-class HighScore:
-    def __init__(self):
-        self.name = None
-        self.score = 0
+def main():
+    Window = window("Mr.p is a doofus")
+    Window.custom_title_bar("Tkinter_App-(rock_paper_scissors)")
+    Window.canvas()
+    panel = Window.panel()
+    deck_size = tk.IntVar()
+    def set_deck_size(selection):
+        number = int(selection.replace(" cards", ""))
+        deck_size.set(number)
+        print(deck_size.get())
+    settings.SS_menu(   
+        panel,
+        ['12 cards', '18 cards', '30 cards', '42 cards', '60 cards'],
+        set_deck_size,
+        prefix="Deck Size:",
+        stripper = " cards"
+    )
+    settings.SS_text_box(panel, "player_data", prefix="Player Name:")
+    Window.mainloop()
 
-    def update(self, player_name, player_score):
-        if player_score > self.score:
-            self.name = player_name
-            self.score = player_score
-
-    def __str__(self):
-        if self.name is None:
-            return "No high score yet."
-        return f"High Score -> {self.name.capitalize()} with {self.score} total wins"
-high_score = HighScore()
-player_dic = {}
-PlayAgain="yes"
-while PlayAgain==("yes"):
-
-    while True:
-        current_player = input("Who is the current player?: ").lower()
-        while True:
-            NameConfirmation = input("Your name is " + current_player.capitalize() + ", is this correct? (Yes/No): ").lower() # gives the user a chance to double check their input
-            if NameConfirmation == "yes": # if they write yes...
-                break # ...end the loop
-            elif NameConfirmation == "no": # if they write no...
-                break # ...continue the confirmation loop
-            else: # if they write something other than 'yes' or 'no'...
-                print("Please enter 'Yes' or 'No'.")
-        if NameConfirmation == "no":
-            continue
-        else:
-            break
-        
-    if current_player not in player_dic:
-        CPS = 0
-        CBS = 0
-        player_dic[current_player] = (str(CPS) + ":" + str(CBS))
-    else:
-        CPS = int(player_dic[current_player].split(":")[0])
-        CBS = int(player_dic[current_player].split(":")[1])
-    
-    print("\n- - - - - - - - - - - - - -\n") # cool border
-    Results = Combat().game() # runs the game and returns both player and bot final scores
-    CPS = CPS + Results[0]
-    CBS = CBS + Results[1]
-    player_dic[current_player] = str(CPS) + ":" + str(CBS)
-    high_score.update(current_player, CPS)
-    print(high_score)
-
-    while True:
-        PlayAgain = input("Would you like to play again? (Yes/No): ").lower().strip()
-        if PlayAgain in ["yes", "no"]:
-            break
-        else:
-            print("Please enter 'Yes' or 'No'.")
-
-print()
-print("Thank you, come again.")
+if __name__ == "__main__":
+    print("This isnt meant to be run as a main, but oh well here ya go")
+    main()
